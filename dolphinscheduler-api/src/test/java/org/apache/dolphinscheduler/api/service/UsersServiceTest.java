@@ -26,9 +26,7 @@ import org.apache.dolphinscheduler.api.service.impl.UsersServiceImpl;
 import org.apache.dolphinscheduler.api.utils.PageInfo;
 import org.apache.dolphinscheduler.api.utils.Result;
 import org.apache.dolphinscheduler.common.Constants;
-import org.apache.dolphinscheduler.common.enums.ResourceType;
 import org.apache.dolphinscheduler.common.enums.UserType;
-import org.apache.dolphinscheduler.common.utils.CollectionUtils;
 import org.apache.dolphinscheduler.common.utils.EncryptionUtils;
 import org.apache.dolphinscheduler.dao.entity.AlertGroup;
 import org.apache.dolphinscheduler.dao.entity.Project;
@@ -45,6 +43,9 @@ import org.apache.dolphinscheduler.dao.mapper.ResourceUserMapper;
 import org.apache.dolphinscheduler.dao.mapper.TenantMapper;
 import org.apache.dolphinscheduler.dao.mapper.UDFUserMapper;
 import org.apache.dolphinscheduler.dao.mapper.UserMapper;
+import org.apache.dolphinscheduler.spi.enums.ResourceType;
+
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +70,7 @@ import com.google.common.collect.Lists;
 /**
  * users service test
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class UsersServiceTest {
 
     private static final Logger logger = LoggerFactory.getLogger(UsersServiceTest.class);
@@ -333,6 +334,74 @@ public class UsersServiceTest {
         Assert.assertEquals(Status.USER_NOT_EXIST, result.get(Constants.STATUS));
         //success
         result = usersService.grantProject(loginUser, 1, projectIds);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.SUCCESS, result.get(Constants.STATUS));
+    }
+
+    @Test
+    public void testGrantProjectByCode() {
+        // Mock Project, User
+        final long projectCode = 1L;
+        final int projectCreator = 1;
+        final int authorizer = 100;
+        Mockito.when(this.userMapper.selectById(authorizer)).thenReturn(this.getUser());
+        Mockito.when(this.userMapper.selectById(projectCreator)).thenReturn(this.getUser());
+        Mockito.when(this.projectMapper.queryByCode(projectCode)).thenReturn(this.getProject());
+
+        // ERROR: USER_NOT_EXIST
+        User loginUser = new User();
+        Map<String, Object> result = this.usersService.grantProjectByCode(loginUser, 999, projectCode);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.USER_NOT_EXIST, result.get(Constants.STATUS));
+
+        // ERROR: PROJECT_NOT_FOUNT
+        result = this.usersService.grantProjectByCode(loginUser, authorizer, 999);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.PROJECT_NOT_FOUND, result.get(Constants.STATUS));
+
+        // ERROR: USER_NO_OPERATION_PERM
+        loginUser.setId(999);
+        loginUser.setUserType(UserType.GENERAL_USER);
+        result = this.usersService.grantProjectByCode(loginUser, authorizer, projectCode);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.USER_NO_OPERATION_PERM, result.get(Constants.STATUS));
+
+        // SUCCESS: USER IS PROJECT OWNER
+        loginUser.setId(projectCreator);
+        loginUser.setUserType(UserType.GENERAL_USER);
+        result = this.usersService.grantProjectByCode(loginUser, authorizer, projectCode);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.SUCCESS, result.get(Constants.STATUS));
+
+        // SUCCESS: USER IS ADMINISTRATOR
+        loginUser.setId(999);
+        loginUser.setUserType(UserType.ADMIN_USER);
+        result = this.usersService.grantProjectByCode(loginUser, authorizer, projectCode);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.SUCCESS, result.get(Constants.STATUS));
+    }
+
+    @Test
+    public void testRevokeProject() {
+        Mockito.when(this.userMapper.selectById(1)).thenReturn(this.getUser());
+
+        final long projectCode = 3682329499136L;
+
+        // user no permission
+        User loginUser = new User();
+        Map<String, Object> result = this.usersService.revokeProject(loginUser, 1, projectCode);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.USER_NO_OPERATION_PERM, result.get(Constants.STATUS));
+
+        // user not exist
+        loginUser.setUserType(UserType.ADMIN_USER);
+        result = this.usersService.revokeProject(loginUser, 2, projectCode);
+        logger.info(result.toString());
+        Assert.assertEquals(Status.USER_NOT_EXIST, result.get(Constants.STATUS));
+
+        // success
+        Mockito.when(this.projectMapper.queryByCode(Mockito.anyLong())).thenReturn(new Project());
+        result = this.usersService.revokeProject(loginUser, 1, projectCode);
         logger.info(result.toString());
         Assert.assertEquals(Status.SUCCESS, result.get(Constants.STATUS));
     }
@@ -615,6 +684,22 @@ public class UsersServiceTest {
         user.setUserPassword("userTest0001");
         user.setState(0);
         return user;
+    }
+
+    /**
+     * Get project
+     * @return
+     */
+    private Project getProject() {
+        Project project = new Project();
+        project.setId(1);
+        project.setCode(1L);
+        project.setUserId(1);
+        project.setName("PJ-001");
+        project.setPerm(7);
+        project.setDefCount(0);
+        project.setInstRunningCount(0);
+        return project;
     }
 
     /**
