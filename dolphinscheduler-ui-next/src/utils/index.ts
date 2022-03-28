@@ -15,10 +15,16 @@
  * limitations under the License.
  */
 
-import classification from './classification'
+import mapping from './mapping'
+import regex from './regex'
+import truncateText from './truncate-text'
+import log from './log'
 
 const utils = {
-  classification,
+  mapping,
+  regex,
+  truncateText,
+  log
 }
 
 export default utils

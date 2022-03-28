@@ -17,8 +17,8 @@
 
 package org.apache.dolphinscheduler.api.service.impl;
 
-import static org.apache.dolphinscheduler.api.utils.CheckUtils.checkDesc;
-
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.dolphinscheduler.api.enums.Status;
 import org.apache.dolphinscheduler.api.service.ProjectService;
 import org.apache.dolphinscheduler.api.utils.PageInfo;
@@ -35,20 +35,12 @@ import org.apache.dolphinscheduler.dao.mapper.ProcessDefinitionMapper;
 import org.apache.dolphinscheduler.dao.mapper.ProjectMapper;
 import org.apache.dolphinscheduler.dao.mapper.ProjectUserMapper;
 import org.apache.dolphinscheduler.dao.mapper.UserMapper;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.util.*;
+
+import static org.apache.dolphinscheduler.api.utils.CheckUtils.checkDesc;
 
 /**
  * project service impl
@@ -250,7 +242,7 @@ public class ProjectServiceImpl extends BaseServiceImpl implements ProjectServic
             return checkResult;
         }
 
-        if (!hasPerm(loginUser, project.getUserId())) {
+        if (!canOperator(loginUser, project.getUserId())) {
             putMsg(result, Status.USER_NO_OPERATION_PERM);
             return result;
         }
@@ -344,11 +336,14 @@ public class ProjectServiceImpl extends BaseServiceImpl implements ProjectServic
     @Override
     public Map<String, Object> queryUnauthorizedProject(User loginUser, Integer userId) {
         Map<String, Object> result = new HashMap<>();
-        if (loginUser.getId() != userId && isNotAdmin(loginUser, result)) {
-            return result;
+
+        List<Project> projectList;
+        if (isAdmin(loginUser)) {
+            // admin gets all projects except userId
+            projectList = projectMapper.queryProjectExceptUserId(userId);
+        } else {
+            projectList = projectMapper.queryProjectCreatedByUser(loginUser.getId());
         }
-        // query all project list except specified userId
-        List<Project> projectList = projectMapper.queryProjectExceptUserId(userId);
         List<Project> resultList = new ArrayList<>();
         Set<Project> projectSet;
         if (projectList != null && !projectList.isEmpty()) {
@@ -392,10 +387,6 @@ public class ProjectServiceImpl extends BaseServiceImpl implements ProjectServic
     @Override
     public Map<String, Object> queryAuthorizedProject(User loginUser, Integer userId) {
         Map<String, Object> result = new HashMap<>();
-
-        if (loginUser.getId() != userId && isNotAdmin(loginUser, result)) {
-            return result;
-        }
 
         List<Project> projects = projectMapper.queryAuthedProjectListByUserId(userId);
         result.put(Constants.DATA_LIST, projects);

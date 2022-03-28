@@ -18,14 +18,14 @@
 package org.apache.dolphinscheduler.plugin.task.mr;
 
 import org.apache.dolphinscheduler.plugin.task.api.AbstractYarnTask;
-import org.apache.dolphinscheduler.plugin.task.util.MapUtils;
-import org.apache.dolphinscheduler.spi.task.AbstractParameters;
-import org.apache.dolphinscheduler.spi.task.Property;
-import org.apache.dolphinscheduler.spi.task.ResourceInfo;
-import org.apache.dolphinscheduler.spi.task.TaskConstants;
-import org.apache.dolphinscheduler.spi.task.paramparser.ParamUtils;
-import org.apache.dolphinscheduler.spi.task.paramparser.ParameterUtils;
-import org.apache.dolphinscheduler.spi.task.request.TaskRequest;
+import org.apache.dolphinscheduler.plugin.task.api.TaskConstants;
+import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
+import org.apache.dolphinscheduler.plugin.task.api.model.Property;
+import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
+import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
+import org.apache.dolphinscheduler.plugin.task.api.parser.ParamUtils;
+import org.apache.dolphinscheduler.plugin.task.api.parser.ParameterUtils;
+import org.apache.dolphinscheduler.plugin.task.api.utils.MapUtils;
 import org.apache.dolphinscheduler.spi.utils.JSONUtils;
 
 import java.util.ArrayList;
@@ -52,13 +52,13 @@ public class MapReduceTask extends AbstractYarnTask {
     /**
      * taskExecutionContext
      */
-    private TaskRequest taskExecutionContext;
+    private TaskExecutionContext taskExecutionContext;
 
     /**
      * constructor
      * @param taskExecutionContext taskExecutionContext
      */
-    public MapReduceTask(TaskRequest taskExecutionContext) {
+    public MapReduceTask(TaskExecutionContext taskExecutionContext) {
         super(taskExecutionContext);
         this.taskExecutionContext = taskExecutionContext;
     }
@@ -119,17 +119,9 @@ public class MapReduceTask extends AbstractYarnTask {
     protected void setMainJarName() {
         // main jar
         ResourceInfo mainJar = mapreduceParameters.getMainJar();
-        if (mainJar != null) {
-            int resourceId = mainJar.getId();
-            String resourceName;
-            if (resourceId == 0) {
-                resourceName = mainJar.getRes();
-            } else {
-                resourceName = mainJar.getResourceName().replaceFirst("/", "");
-            }
-            mainJar.setRes(resourceName);
-            mapreduceParameters.setMainJar(mainJar);
-        }
+        String resourceName = getResourceNameOfMainJar(mainJar);
+        mainJar.setRes(resourceName);
+        mapreduceParameters.setMainJar(mainJar);
     }
 
     @Override

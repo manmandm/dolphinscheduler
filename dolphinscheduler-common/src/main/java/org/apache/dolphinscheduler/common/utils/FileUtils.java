@@ -17,23 +17,14 @@
 
 package org.apache.dolphinscheduler.common.utils;
 
-import static org.apache.dolphinscheduler.common.Constants.DATA_BASEDIR_PATH;
-import static org.apache.dolphinscheduler.common.Constants.RESOURCE_VIEW_SUFFIXS;
-import static org.apache.dolphinscheduler.common.Constants.RESOURCE_VIEW_SUFFIXS_DEFAULT_VALUE;
-import static org.apache.dolphinscheduler.common.Constants.UTF_8;
-import static org.apache.dolphinscheduler.common.Constants.YYYYMMDDHHMMSS;
-
 import org.apache.commons.io.IOUtils;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+
+import static org.apache.dolphinscheduler.common.Constants.*;
 
 /**
  * file utils
@@ -106,8 +97,8 @@ public class FileUtils {
     /**
      * @return get suffixes for resource files that support online viewing
      */
-    public static String getResourceViewSuffixs() {
-        return PropertyUtils.getString(RESOURCE_VIEW_SUFFIXS, RESOURCE_VIEW_SUFFIXS_DEFAULT_VALUE);
+    public static String getResourceViewSuffixes() {
+        return PropertyUtils.getString(RESOURCE_VIEW_SUFFIXES, RESOURCE_VIEW_SUFFIXES_DEFAULT_VALUE);
     }
 
     /**
@@ -138,16 +129,20 @@ public class FileUtils {
      * @return true if write success
      */
     public static boolean writeContent2File(String content, String filePath) {
+        FileOutputStream fos = null;
         try {
             File distFile = new File(filePath);
             if (!distFile.getParentFile().exists() && !distFile.getParentFile().mkdirs()) {
                 logger.error("mkdir parent failed");
                 return false;
             }
-            IOUtils.write(content, new FileOutputStream(filePath), StandardCharsets.UTF_8);
+            fos = new FileOutputStream(filePath);
+            IOUtils.write(content, fos, StandardCharsets.UTF_8);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return false;
+        } finally {
+            IOUtils.closeQuietly(fos);
         }
         return true;
     }

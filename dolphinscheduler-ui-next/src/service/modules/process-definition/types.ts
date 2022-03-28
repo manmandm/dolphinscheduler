@@ -53,11 +53,13 @@ interface ListReq extends PageReq {
   userId?: number
 }
 
-interface ProcessDefinitionReq extends NameReq {
+interface ProcessDefinitionReq {
+  name: string
   locations: string
   taskDefinitionJson: string
   taskRelationJson: string
   tenantCode: string
+  executionType: string
   description?: string
   globalParams?: string
   timeout?: number
@@ -65,6 +67,13 @@ interface ProcessDefinitionReq extends NameReq {
 
 interface TargetCodeReq {
   targetProjectCode: number
+}
+
+interface SimpleListRes {
+  id: number
+  code: any
+  name: string
+  projectCode: any
 }
 
 export {
@@ -79,4 +88,5 @@ export {
   ListReq,
   ProcessDefinitionReq,
   TargetCodeReq,
+  SimpleListRes
 }

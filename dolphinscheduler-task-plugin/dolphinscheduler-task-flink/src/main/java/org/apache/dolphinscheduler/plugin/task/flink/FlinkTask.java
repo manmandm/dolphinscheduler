@@ -18,13 +18,13 @@
 package org.apache.dolphinscheduler.plugin.task.flink;
 
 import org.apache.dolphinscheduler.plugin.task.api.AbstractYarnTask;
-import org.apache.dolphinscheduler.plugin.task.util.MapUtils;
-import org.apache.dolphinscheduler.spi.task.AbstractParameters;
-import org.apache.dolphinscheduler.spi.task.Property;
-import org.apache.dolphinscheduler.spi.task.ResourceInfo;
-import org.apache.dolphinscheduler.spi.task.paramparser.ParamUtils;
-import org.apache.dolphinscheduler.spi.task.paramparser.ParameterUtils;
-import org.apache.dolphinscheduler.spi.task.request.TaskRequest;
+import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
+import org.apache.dolphinscheduler.plugin.task.api.model.Property;
+import org.apache.dolphinscheduler.plugin.task.api.model.ResourceInfo;
+import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
+import org.apache.dolphinscheduler.plugin.task.api.parser.ParamUtils;
+import org.apache.dolphinscheduler.plugin.task.api.parser.ParameterUtils;
+import org.apache.dolphinscheduler.plugin.task.api.utils.MapUtils;
 import org.apache.dolphinscheduler.spi.utils.JSONUtils;
 import org.apache.dolphinscheduler.spi.utils.StringUtils;
 
@@ -50,9 +50,9 @@ public class FlinkTask extends AbstractYarnTask {
     /**
      * taskExecutionContext
      */
-    private TaskRequest taskExecutionContext;
+    private TaskExecutionContext taskExecutionContext;
 
-    public FlinkTask(TaskRequest taskExecutionContext) {
+    public FlinkTask(TaskExecutionContext taskExecutionContext) {
         super(taskExecutionContext);
         this.taskExecutionContext = taskExecutionContext;
     }
@@ -116,17 +116,9 @@ public class FlinkTask extends AbstractYarnTask {
     protected void setMainJarName() {
         // main jar
         ResourceInfo mainJar = flinkParameters.getMainJar();
-        if (mainJar != null) {
-            int resourceId = mainJar.getId();
-            String resourceName;
-            if (resourceId == 0) {
-                resourceName = mainJar.getRes();
-            } else {
-                resourceName = mainJar.getResourceName().replaceFirst("/", "");
-            }
-            mainJar.setRes(resourceName);
-            flinkParameters.setMainJar(mainJar);
-        }
+        String resourceName = getResourceNameOfMainJar(mainJar);
+        mainJar.setRes(resourceName);
+        flinkParameters.setMainJar(mainJar);
     }
 
     @Override

@@ -55,14 +55,22 @@ public class DolphinSchedulerManager {
     }
 
     public void initDolphinScheduler() {
+        this.initDolphinSchedulerSchema();
+    }
+
+    /**
+     * whether schema is initialized
+     * @return true if schema is initialized
+     */
+    public boolean schemaIsInitialized() {
         // Determines whether the dolphinscheduler table structure has been init
         if (upgradeDao.isExistsTable("t_escheduler_version")
             || upgradeDao.isExistsTable("t_ds_version")
             || upgradeDao.isExistsTable("t_escheduler_queue")) {
             logger.info("The database has been initialized. Skip the initialization step");
-            return;
+            return true;
         }
-        this.initDolphinSchedulerSchema();
+        return false;
     }
 
     public void initDolphinSchedulerSchema() {
@@ -92,12 +100,13 @@ public class DolphinSchedulerManager {
             }
             // The target version of the upgrade
             String schemaVersion = "";
+            String currentVersion = version;
             for (String schemaDir : schemaList) {
                 schemaVersion = schemaDir.split("_")[0];
                 if (SchemaUtils.isAGreatVersion(schemaVersion, version)) {
                     logger.info("upgrade DolphinScheduler metadata version from {} to {}", version, schemaVersion);
                     logger.info("Begin upgrading DolphinScheduler's table structure");
-                    upgradeDao.upgradeDolphinScheduler(schemaDir);
+                     upgradeDao.upgradeDolphinScheduler(schemaDir);
                     if ("1.3.0".equals(schemaVersion)) {
                         upgradeDao.upgradeDolphinSchedulerWorkerGroup();
                     } else if ("1.3.2".equals(schemaVersion)) {
@@ -107,6 +116,10 @@ public class DolphinSchedulerManager {
                     }
                     version = schemaVersion;
                 }
+            }
+
+            if (SchemaUtils.isAGreatVersion("2.0.6", currentVersion) && SchemaUtils.isAGreatVersion(SchemaUtils.getSoftVersion(), currentVersion)) {
+                upgradeDao.upgradeDolphinSchedulerResourceFileSize();
             }
         }
 

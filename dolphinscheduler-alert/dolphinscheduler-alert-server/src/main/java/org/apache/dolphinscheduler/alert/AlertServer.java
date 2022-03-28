@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
@@ -38,7 +37,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.event.EventListener;
 
 @SpringBootApplication
 @ComponentScan("org.apache.dolphinscheduler")
@@ -68,20 +69,15 @@ public class AlertServer implements Closeable {
         SpringApplication.run(AlertServer.class, args);
     }
 
-    @PostConstruct
-    public void start() {
+    @EventListener
+    public void start(ApplicationReadyEvent readyEvent) {
         logger.info("Starting Alert server");
 
         checkTable();
         startServer();
 
-        if (alertPluginManager.size() == 0) {
-            logger.warn("No alert plugin, alert sender will exit.");
-            return;
-        }
-
         Executors.newScheduledThreadPool(1)
-                 .scheduleAtFixedRate(new Sender(), 5, 5, TimeUnit.SECONDS);
+                .scheduleAtFixedRate(new Sender(), 5, 5, TimeUnit.SECONDS);
     }
 
     @Override

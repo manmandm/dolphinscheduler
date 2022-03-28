@@ -48,7 +48,7 @@ public class JDBCDataSourceProvider {
         loaderJdbcDriver(classLoader, properties, dbType);
 
         dataSource.setDriverClassName(properties.getDriverClassName());
-        dataSource.setJdbcUrl(properties.getJdbcUrl());
+        dataSource.setJdbcUrl(DataSourceUtils.getJdbcUrl(dbType, properties));
         dataSource.setUsername(properties.getUser());
         dataSource.setPassword(PasswordUtils.decodePassword(properties.getPassword()));
 
@@ -67,18 +67,19 @@ public class JDBCDataSourceProvider {
     /**
      * @return One Session Jdbc DataSource
      */
-    public static HikariDataSource createOneSessionJdbcDataSource(BaseConnectionParam properties) {
+    public static HikariDataSource createOneSessionJdbcDataSource(BaseConnectionParam properties, DbType dbType) {
         logger.info("Creating OneSession HikariDataSource pool for maxActive:{}", PropertyUtils.getInt(Constants.SPRING_DATASOURCE_MAX_ACTIVE, 50));
 
         HikariDataSource dataSource = new HikariDataSource();
 
         dataSource.setDriverClassName(properties.getDriverClassName());
-        dataSource.setJdbcUrl(properties.getJdbcUrl());
+        dataSource.setJdbcUrl(DataSourceUtils.getJdbcUrl(dbType, properties));
         dataSource.setUsername(properties.getUser());
         dataSource.setPassword(PasswordUtils.decodePassword(properties.getPassword()));
 
-        dataSource.setMinimumIdle(1);
-        dataSource.setMaximumPoolSize(1);
+        Boolean isOneSession = PropertyUtils.getBoolean(Constants.SUPPORT_HIVE_ONE_SESSION, false);
+        dataSource.setMinimumIdle(isOneSession ? 1 : PropertyUtils.getInt(Constants.SPRING_DATASOURCE_MIN_IDLE, 5));
+        dataSource.setMaximumPoolSize(isOneSession ? 1 : PropertyUtils.getInt(Constants.SPRING_DATASOURCE_MAX_ACTIVE, 50));
         dataSource.setConnectionTestQuery(properties.getValidationQuery());
 
         if (properties.getProps() != null) {
